@@ -2,6 +2,23 @@ import { useState, useEffect } from 'react'
 import { ethers } from "ethers"
 import { Row, Col, Card } from 'react-bootstrap'
 
+const fetchMetaData = (ipfsHash) => {
+  const metaDataJson = localStorage.getItem(`metadata_${ipfsHash}`);
+
+  if(!metaDataJson){
+    console.log(`no metadata found for NFT ${ipfsHash}`);
+    return null;
+  }
+  try{
+    const metaData = JSON.parse(metaDataJson);
+    console.log(`metadata for nft ${ipfsHash} fetched successfully`);
+    return metaData;
+  }catch(err){
+    console.error('error parsing metadata from localstorage: ', err);
+    return null;
+  }
+};
+
 function renderSoldItems(items) {
   return (
     <>
@@ -36,19 +53,32 @@ export default function MyListedItems({ marketplace, nft, account }) {
       if (i.seller.toLowerCase() === account) {
         // get uri url from nft contract
         const uri = await nft.tokenURI(i.tokenId)
+        console.log("list ki uri: ", uri);
+        const parts = uri.split("/");
+        const ipfsHash = parts[parts.length - 1];
+        const metaData = fetchMetaData(ipfsHash);
+        console.log("metadata: ",metaData);
         // use uri to fetch the nft metadata stored on ipfs 
-        const response = await fetch(uri)
-        const metadata = await response.json()
+        // const response = await fetch(uri)
+        // const metadata = await response.json()
         // get total price of item (item price + fee)
         const totalPrice = await marketplace.getTotalPrice(i.itemId)
         // define listed item object
+        let name = "name";
+        let desc = "desc";
+        let image = "https://violet-key-lamprey-665.mypinata.cloud/ipfs/QmZ7T82k9pDCDMMXpaxk5JnaBZMRdRmhsGDqjrAuKXS9st";
+        if(metaData!=null){
+          name = metaData.name;
+          desc = metaData.description;
+          image = metaData.image;
+        }
         let item = {
           totalPrice,
           price: i.price,
           itemId: i.itemId,
-          name: metadata.name,
-          description: metadata.description,
-          image: metadata.image
+          name: name,
+          description: desc,
+          image: image
         }
         listedItems.push(item)
         // Add listed item to sold items array if sold
