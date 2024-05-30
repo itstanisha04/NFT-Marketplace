@@ -2,6 +2,24 @@ import { useState, useEffect } from 'react'
 import { ethers } from "ethers"
 import { Row, Col, Card } from 'react-bootstrap'
 
+const fetchMetaData = (ipfsHash) => {
+  const metaDataJson = localStorage.getItem(`metadata_${ipfsHash}`);
+
+  if(!metaDataJson){
+    console.log(`no metadata found for NFT ${ipfsHash}`);
+    return null;
+  }
+  try{
+    const metaData = JSON.parse(metaDataJson);
+    console.log(`metadata for nft ${ipfsHash} fetched successfully`);
+    return metaData;
+  }catch(err){
+    console.error('error parsing metadata from localstorage: ', err);
+    return null;
+  }
+};
+
+
 export default function MyPurchases({ marketplace, nft, account }) {
   const [loading, setLoading] = useState(true)
   const [purchases, setPurchases] = useState([])
@@ -15,9 +33,23 @@ export default function MyPurchases({ marketplace, nft, account }) {
       i = i.args
       // get uri url from nft contract
       const uri = await nft.tokenURI(i.tokenId)
+        console.log("purchase ki uri: ", uri);
+        const parts = uri.split("/");
+        const ipfsHash = parts[parts.length - 1];
+        const metaData = fetchMetaData(ipfsHash);
+        console.log("metadata: ",metaData);
+        // define listed item object
+        let name = "name";
+        let desc = "desc";
+        let image = "https://violet-key-lamprey-665.mypinata.cloud/ipfs/QmZ7T82k9pDCDMMXpaxk5JnaBZMRdRmhsGDqjrAuKXS9st";
+        if(metaData!=null){
+          name = metaData.name;
+          desc = metaData.description;
+          image = metaData.image;
+        }
       // use uri to fetch the nft metadata stored on ipfs 
-      const response = await fetch(uri)
-      const metadata = await response.json()
+      // const response = await fetch(uri)
+      // const metadata = await response.json()
       // get total price of item (item price + fee)
       const totalPrice = await marketplace.getTotalPrice(i.itemId)
       // define listed item object
@@ -25,9 +57,9 @@ export default function MyPurchases({ marketplace, nft, account }) {
         totalPrice,
         price: i.price,
         itemId: i.itemId,
-        name: metadata.name,
-        description: metadata.description,
-        image: metadata.image
+        name: name,
+        description: desc,
+        image: image
       }
       return purchasedItem
     }))

@@ -52,7 +52,7 @@ function App() {
     console.log(marketplace );
     const nft = new ethers.Contract(NFTAddress.address, NFTAbi.abi, signer)
     setNFT(nft)
-    console.log(nft );
+    console.log(nft);
     setLoading(false)
   }
 
