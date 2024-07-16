@@ -2,6 +2,8 @@
 
 For the "Network Name" field enter "Hardhat". For the "New RPC URL" field enter "http://127.0.0.1:8545". For the chain ID enter "31337". Then click save.
 
+To install hardhat: npm install --save-dev hardhat
+
 To get dummy accounts: `npx hardhat node`
 
 Deploy the Smart Contracts:
