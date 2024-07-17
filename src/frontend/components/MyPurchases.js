@@ -23,6 +23,7 @@ const fetchMetaData = (ipfsHash) => {
 export default function MyPurchases({ marketplace, nft, account }) {
   const [loading, setLoading] = useState(true)
   const [purchases, setPurchases] = useState([])
+
   const loadPurchasedItems = async () => {
     // Fetch purchased items from marketplace by quering Offered events with the buyer set as the user
     const filter =  marketplace.filters.Bought(null,null,null,null,null,account)
@@ -31,49 +32,38 @@ export default function MyPurchases({ marketplace, nft, account }) {
     const purchases = await Promise.all(results.map(async i => {
       // fetch arguments from each result
       i = i.args
-      // get uri url from nft contract
       const uri = await nft.tokenURI(i.tokenId)
-        console.log("purchase ki uri: ", uri);
-        const parts = uri.split("/");
-        const ipfsHash = parts[parts.length - 1];
-        const metaData = fetchMetaData(ipfsHash);
-        console.log("metadata: ",metaData);
-        // define listed item object
-        let name = "name";
-        let desc = "desc";
-        let image = "https://violet-key-lamprey-665.mypinata.cloud/ipfs/QmZ7T82k9pDCDMMXpaxk5JnaBZMRdRmhsGDqjrAuKXS9st";
-        if(metaData!=null){
-          name = metaData.name;
-          desc = metaData.description;
-          image = metaData.image;
-        }
-      // use uri to fetch the nft metadata stored on ipfs 
-      // const response = await fetch(uri)
-      // const metadata = await response.json()
-      // get total price of item (item price + fee)
+      const parts = uri.split("/");
+      const ipfsHash = parts[parts.length - 1];
+      const metaData = fetchMetaData(ipfsHash);
+  
       const totalPrice = await marketplace.getTotalPrice(i.itemId)
       // define listed item object
       let purchasedItem = {
         totalPrice,
         price: i.price,
         itemId: i.itemId,
-        name: name,
-        description: desc,
-        image: image
+        name: metaData.name,
+        description: metaData.desc,
+        image: metaData.image
       }
       return purchasedItem
     }))
+
     setLoading(false)
     setPurchases(purchases)
   }
+
   useEffect(() => {
     loadPurchasedItems()
   }, [])
+
   if (loading) return (
     <main style={{ padding: "1rem 0" }}>
       <h2>Loading...</h2>
     </main>
   )
+  
   return (
     <div className="flex justify-center">
       {purchases.length > 0 ?
