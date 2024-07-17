@@ -10,9 +10,7 @@ const createMetaData = (name, description, price, ipfsHash) => {
     image: `https://violet-key-lamprey-665.mypinata.cloud/ipfs/${ipfsHash}`,
     price: price
   };
-  // Convert the metadata object to a JSON string
   const metaDataJson = JSON.stringify(metaData, null, 2);
-  // Write the JSON string to a new file in the metadata directory
   try{
     localStorage.setItem(`metadata_${ipfsHash}`, metaDataJson);
     console.log(`metadata for nft ${ipfsHash} stored successfully`);
@@ -22,7 +20,6 @@ const createMetaData = (name, description, price, ipfsHash) => {
 };
 
 const Create = ({ marketplace, nft }) => {
-  // const [image, setImage] = useState('')
   const [price, setPrice] = useState(null)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -33,9 +30,7 @@ const Create = ({ marketplace, nft }) => {
     if(file){
       try{
         setSelectedFile(file.target.files[0]);
-        console.log(selectedFile, "+h+")
         console.log("file loaded")
-  
       } catch(error){
           console.log("Unable to upload image to Pinata");
       }
@@ -43,21 +38,9 @@ const Create = ({ marketplace, nft }) => {
   }
 
   const createNFT = async () => {
-    console.log("+h+", price, "+h+", name, "+h+", description, "+h+")
     try{
       const formData = new FormData();
       formData.append("file", selectedFile);
-    //   const metaData = {
-    //     name: name,
-    //     description: description,
-    //     attributes: [
-    //         {
-    //             "trait_type": "Price",
-    //             "value": price
-    //         }
-    //     ]
-    // }
-      // formData.append("pinataMetadata", JSON.stringify(metaData));
       const options = JSON.stringify({
         cidVersion: 0,
       });
@@ -81,54 +64,22 @@ const Create = ({ marketplace, nft }) => {
       const ipfsHash = resData.IpfsHash;
       
       createMetaData(name, description, price, ipfsHash);
-      console.log("create meta data called completed")
 
-      const metaData = {
-        name: name,
-        description: description,
-        image: `https://violet-key-lamprey-665.mypinata.cloud/ipfs/${ipfsHash}`,
-        attributes: [
-          {
-            trait_type: "Price",
-            value: price
-          }
-        ]
-      }
-      const metaRes = await fetch(
-        "https://api.pinata.cloud/pinning/pinJSONToIPFS",
-        {
-          method: "POST",
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${JWT}`,
-          },
-          body: JSON.stringify(metaData),
-        }
-      );
-
-      if(!metaRes.ok){
-        console.error('Upload metadata to pinata failed');
-        return;
-      }
-      console.log(metaRes);
-      console.log(metaRes.json())
       mintThenList(ipfsHash)
       
     }catch(error) {
         console.log("ipfs uri upload error: ", error)
     }
   }
+
   const mintThenList = async (result) => {
     const uri = `https://violet-key-lamprey-665.mypinata.cloud/ipfs/${result}`
-    console.log(uri);
+    console.log("URI ", uri)
 
-    // // mint nft 
     try{
-      const minTx = await nft.mint(uri);
-      await minTx.wait()
+      const minTx = await( await nft.mint(uri))
     }catch(err){
-      console.log("pblm in minting");
-      console.log(err.message);
+      console.log("pblm in minting", err.message);
     }
     try{
       const id = await nft.tokenCount()
@@ -137,16 +88,14 @@ const Create = ({ marketplace, nft }) => {
       await(await nft.setApprovalForAll(marketplace.address, true)).wait()
       // add nft to marketplace
       const listingPrice = ethers.utils.parseEther(price.toString())
-      console.log("price: ", listingPrice._hex);
       await(await marketplace.makeItem(nft.address, id, listingPrice)).wait()
     }catch(err){
-      console.log("error: ", err);
-      console.log(err.message);
+      console.log("error: ", err.message);
     }
     alert("NFT Created.")
     console.log("Minting completed");
-    
   }
+
   return (
     <div className="container-fluid mt-5">
       <div className="row">
